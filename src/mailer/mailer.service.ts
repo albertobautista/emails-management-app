@@ -3,7 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import { SendEmailDto } from './mail.interface';
 import Mail from 'nodemailer/lib/mailer';
-
+import * as fs from 'fs';
+import * as csvParser from 'csv-parser';
 @Injectable()
 export class MailerService {
   constructor(private readonly configService: ConfigService) {}
@@ -34,9 +35,10 @@ export class MailerService {
         name: this.configService.get('APP_NAME'),
         address: this.configService.get('DEFAULT_EMAIL_FROM'),
       },
-      to: recipients,
+      // to: recipients,
       subject,
       html,
+      bcc: recipients,
     };
     console.log('options', options);
     try {
@@ -46,5 +48,15 @@ export class MailerService {
       console.log(error);
       return error;
     }
+  }
+  async parseCsv(filePath: string): Promise<any[]> {
+    const results = [];
+    return new Promise((resolve, reject) => {
+      fs.createReadStream(filePath)
+        .pipe(csvParser())
+        .on('data', (data) => results.push(data))
+        .on('end', () => resolve(results))
+        .on('error', (error) => reject(error));
+    });
   }
 }
